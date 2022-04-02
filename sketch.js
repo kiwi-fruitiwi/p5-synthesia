@@ -51,24 +51,24 @@ let instructions
 
 let midiJSON /* json file containing translated midi msgs from tone.js */
 let tracks = []
-let track0_notes = [] /* track 0's notes */
-let notes = [] /* list of note objects created from track 0's JSON notes */
+let rh, lh /* list of note objects created from tracks 0 & 1 of JSON notes */
 let start /* starting time of sound playback. used as offset */
 let started = false
+let lhStarted = false
 
-let midiNotes = []
-let noteIndex = 0
-let midiVal, freq
+let midiValue, freq
 let osc
 let env
+let lhOsc, lhEnv
 
 let DEBUG_TEXT = 'hello! press T to start playback'
 let notePos = 0 /* current note in the notes list */
+let lhNotePos = 0 /* current note in the left-hand notes list */
 
 
 function preload() {
     font = loadFont('data/consola.ttf')
-    midiJSON = loadJSON('midi-json/tone.js/toccata.json')
+    midiJSON = loadJSON('midi-json/tone.js/sinfonia.json')
 }
 
 
@@ -84,16 +84,21 @@ function setup() {
     instructions = select('#ins')
     instructions.html(`<pre>
         [1,2,3,4,5] → no function 🐳
-        s → cycle through MIDI sounds
         t → iterate through midi notes and play them
         z → freeze sketch</pre>`)
 
 
-    setupOscillator()
-    notes = createNotes(midiJSON['tracks'][0]['notes'])
-    console.log(notes)
+    osc = new p5.TriOsc();
+    env = new p5.Envelope();
+
+    lhOsc = new p5.TriOsc();
+    lhEnv = new p5.Envelope();
+
+    rh = createNotes(midiJSON['tracks'][0]['notes'])
+    lh = createNotes(midiJSON['tracks'][1]['notes'])
 
     /* track data → console.log(midiJSON['tracks']) */
+    console.log(midiJSON['tracks'])
 }
 
 
@@ -108,21 +113,40 @@ function draw() {
             index++
      */
     if (started) {
-        if (millis() > notes[notePos].timestamp * 1000 + start) {
-            midiVal = notes[notePos].noteID;
-            freq = midiToFreq(midiVal);
-            console.log(freq)
+
+        /* for rh's set of notes. this comprises the right hand */
+        if (millis() > rh[notePos].timestamp * 1000 + start) {
+            midiValue = rh[notePos].noteID;
+            freq = midiToFreq(midiValue);
             osc.freq(freq);
             env.ramp(osc, 0, 1.0, 0);
 
-            DEBUG_TEXT = `ID: ${notes[notePos].name}, freq: ${freq.toFixed(2)} Hz`
+            DEBUG_TEXT = `ID: ${rh[notePos].name}, freq: ${freq.toFixed(2)} Hz`
             notePos++
 
             /* automatically reset if we reach the end of the song */
-            if (notePos >= notes.length) {
+            if (notePos >= rh.length) {
                 started = false
                 DEBUG_TEXT = `press T again to start the music!`
                 notePos = 0 /* reset our position */
+            }
+        }
+    }
+
+    if (lhStarted) {
+        /* left-hand notes */
+        if (millis() > lh[lhNotePos].timestamp * 1000 + start) {
+            midiValue = lh[lhNotePos].noteID;
+            freq = midiToFreq(midiValue);
+            lhOsc.freq(freq);
+            lhEnv.ramp(lhOsc, 0, 1.0, 0);
+
+            lhNotePos++
+
+            /* automatically reset if we reach the end of the song */
+            if (lhNotePos >= lh.length) {
+                lhNotePos = 0 /* reset our position */
+                lhStarted = false
             }
         }
     }
@@ -137,29 +161,14 @@ function keyPressed() {
             sketch stopped</pre>`)
     }
 
-    if (key === 's') {
-        startSound()
-    }
-
     if (key === 't') {
         start = millis()
         started = true
+        lhStarted = true
         osc.start()
+        lhOsc.start()
     }
 }
-
-
-/* iterates through arr and plays notes! */
-function playNotes(arr) {
-    osc.start()
-
-    for (let note in arr) {
-        freq = midiToFreq(midiVal)
-        osc.freq(freq)
-        env.ramp(osc, 0, 1.0, 0)
-    }
-}
-
 
 /* convert notes in tone.js midi translation into objects */
 function createNotes(notesList) {
@@ -185,29 +194,6 @@ function logTrackKeys() {
 }
 
 
-function setupOscillator() {
-    /* set up oscillator to produce sounds */
-    osc = new p5.TriOsc();
-    env = new p5.Envelope();
-
-    for (let i=40; i<80; i++) {
-        midiNotes.push(i)
-    }
-}
-
-
-function startSound() {
-    /* see also: userStartAudio */
-    osc.start()
-
-    midiVal = midiNotes[noteIndex % midiNotes.length];
-    freq = midiToFreq(midiVal);
-    osc.freq(freq);
-    env.ramp(osc, 0, 1.0, 0);
-    noteIndex++;
-}
-
-
 /** 🧹 shows debugging info using text() 🧹 */
 function displayDebugCorner() {
     const LEFT_MARGIN = 10
@@ -217,8 +203,8 @@ function displayDebugCorner() {
     fill(0, 0, 100, 100) /* white */
     strokeWeight(0)
 
-    if (midiVal) {
-        text(`MIDI: ${midiVal}`,
+    if (midiValue) {
+        text(`MIDI: ${midiValue}`,
             LEFT_MARGIN, DEBUG_Y_OFFSET - 2*LINE_HEIGHT)
         text(`freq: ${freq.toFixed(1)} Hz`,
             LEFT_MARGIN, DEBUG_Y_OFFSET - LINE_HEIGHT)
