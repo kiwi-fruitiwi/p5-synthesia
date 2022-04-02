@@ -10,13 +10,38 @@
  *  sketch being able to convert notes to real audio is irrelevant as we can
  *  layer the actual audio the MIDI file was extracted from over the
  *  visualization.
+ *
+ *  to convert midi to json, see
+ *     https://colxi.info/midi-parser-js/test/test-es6-import.html
+ *
+ *
+ */
+
+/**
+ *  notes on file format in MIDI
+ *
+ *  mido.py's printing of a MIDI message; each .mid file is full of these
+ *   Message('note_on', channel=0, note=66, velocity=80, time=13),
+ *
+ *  colxi's midi-parser-js's JSON message. the 'data' element is [note, vel]
+ *   {
+ *     "deltaTime": 13,
+ *     "type": 9,
+ *     "channel": 0,
+ *     "data": [
+ *       56,
+ *       80
+ *     ]
+ *   },
+ *
+ *   it looks like 'type' is 'note_on'; there's a table for that
  */
 let font
 let instructions
 
-let midiNotes = [60, 64, 67, 72];
-let noteIndex = 0;
-let midiVal, freq;
+let midiNotes = []
+let noteIndex = 0
+let midiVal, freq
 let osc
 let env
 
@@ -36,17 +61,20 @@ function setup() {
     instructions = select('#ins')
     instructions.html(`<pre>
         [1,2,3,4,5] → no function
+        s → cycle through MIDI sounds
         z → freeze sketch</pre>`)
 
     osc = new p5.TriOsc();
     env = new p5.Envelope();
+
+    for (let i=40; i<80; i++) {
+        midiNotes.push(i)
+    }
 }
 
 
 function draw() {
     background(234, 34, 24)
-
-
     displayDebugCorner()
 }
 
@@ -63,7 +91,7 @@ function displayDebugCorner() {
     if (midiVal) {
         text(`MIDI: ${midiVal}`,
             LEFT_MARGIN, DEBUG_Y_OFFSET - LINE_HEIGHT)
-        text(`freq: ${freq.toFixed(1)}`,
+        text(`freq: ${freq.toFixed(1)} Hz`,
             LEFT_MARGIN, DEBUG_Y_OFFSET)
     }
 }
