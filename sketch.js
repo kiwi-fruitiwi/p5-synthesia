@@ -15,6 +15,20 @@
  *     https://colxi.info/midi-parser-js/test/test-es6-import.html
  *
  *
+ *  ☐ probably one oscillator per track but main objective is visualization
+ *  ☐ migrate particle system
+ *  ☐ huge refactor
+ *  ☒ list of tracks → there are only two
+ *  ☒ create list of notes from tracks
+ *  ☒ play a few notes using millis and durations * scale
+ *      → starting tone due to osc.start() too early
+ *  ☐ the playing mechanism probably needs to be an object
+ *  ☒ play entire track
+ *  ☒ add second track
+ *  ☐ how do find grand piano sound for midi
+ *      → short answer: you play real audio with the visualization :D
+ *  ☒ add basic visualization drawing dots for midiValue → x coordinate
+ *
  */
 
 /**
@@ -61,7 +75,8 @@ let osc
 let env
 let lhOsc, lhEnv
 
-let DEBUG_TEXT = 'hello! press T to start playback'
+let DEBUG_TEXT = ``
+let DEBUG_T2 = 'hello! press T to start playback'
 let notePos = 0 /* current note in the notes list */
 let lhNotePos = 0 /* current note in the left-hand notes list */
 
@@ -83,8 +98,7 @@ function setup() {
     /* initialize instruction div */
     instructions = select('#ins')
     instructions.html(`<pre>
-        [1,2,3,4,5] → no function 🐳
-        t → iterate through midi notes and play them
+        [1,2,3,4,5] → no function 🥝🐳
         z → freeze sketch</pre>`)
 
 
@@ -105,6 +119,8 @@ function setup() {
 function draw() {
     background(234, 34, 24)
     displayDebugCorner()
+    stroke(0, 0, 100)
+    strokeWeight(2)
 
     /* if we've started:
         check notes[0]
@@ -113,7 +129,6 @@ function draw() {
             index++
      */
     if (started) {
-
         /* for rh's set of notes. this comprises the right hand */
         if (millis() > rh[notePos].timestamp * 1000 + start) {
             midiValue = rh[notePos].noteID;
@@ -121,7 +136,12 @@ function draw() {
             osc.freq(freq);
             env.ramp(osc, 0, 1.0, 0);
 
-            DEBUG_TEXT = `ID: ${rh[notePos].name}, freq: ${freq.toFixed(2)} Hz`
+            /* draw a dot with x-coordinate corresponding to its midi value */
+            let x = map(midiValue, 30, 90, 0, width)
+            fill(216, 70, 70, 50)
+            circle(x, height/2, 30)
+
+            DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${midiValue}→${rh[notePos].name}`
             notePos++
 
             /* automatically reset if we reach the end of the song */
@@ -141,6 +161,11 @@ function draw() {
             lhOsc.freq(freq);
             lhEnv.ramp(lhOsc, 0, 1.0, 0);
 
+            let x = map(midiValue, 30, 90, 0, width)
+            fill(90, 70, 70, 50)
+            circle(x, height/2, 30)
+
+            DEBUG_T2 = `${freq.toFixed(2)} Hz, ${midiValue}→${lh[notePos].name}`
             lhNotePos++
 
             /* automatically reset if we reach the end of the song */
@@ -165,8 +190,8 @@ function keyPressed() {
         start = millis()
         started = true
         lhStarted = true
-        osc.start()
         lhOsc.start()
+        osc.start()
     }
 }
 
@@ -203,13 +228,9 @@ function displayDebugCorner() {
     fill(0, 0, 100, 100) /* white */
     strokeWeight(0)
 
-    if (midiValue) {
-        text(`MIDI: ${midiValue}`,
-            LEFT_MARGIN, DEBUG_Y_OFFSET - 2*LINE_HEIGHT)
-        text(`freq: ${freq.toFixed(1)} Hz`,
-            LEFT_MARGIN, DEBUG_Y_OFFSET - LINE_HEIGHT)
-    }
+    text(`RH: ${DEBUG_TEXT}`,
+        LEFT_MARGIN, DEBUG_Y_OFFSET - LINE_HEIGHT)
 
-    text(`debug: ${DEBUG_TEXT}`,
+    text(`LH: ${DEBUG_T2}`,
         LEFT_MARGIN, DEBUG_Y_OFFSET)
 }
