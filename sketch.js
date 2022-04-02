@@ -18,6 +18,7 @@
  *  ☐ probably one oscillator per track but main objective is visualization
  *  ☐ migrate particle system
  *  ☐ huge refactor
+ *  ☐ base music on total time instead of note index
  *  ☒ list of tracks → there are only two
  *  ☒ create list of notes from tracks
  *  ☒ play a few notes using millis and durations * scale
@@ -71,9 +72,13 @@ let started = false
 let lhStarted = false
 
 let midiValue, freq
-let osc
-let env
+let lhMidiValue, lhFreq
+let osc, env
 let lhOsc, lhEnv
+
+/* flags used to prevent oscillator from playing immediately */
+let firstNotePlayedRH = false
+let firstNotePlayedLH = false
 
 let DEBUG_TEXT = ``
 let DEBUG_T2 = 'hello! press T to start playback'
@@ -83,7 +88,7 @@ let lhNotePos = 0 /* current note in the left-hand notes list */
 
 function preload() {
     font = loadFont('data/consola.ttf')
-    midiJSON = loadJSON('midi-json/tone.js/sinfonia.json')
+    midiJSON = loadJSON('midi-json/tone.js/toccata.json')
 }
 
 
@@ -128,9 +133,22 @@ function draw() {
             use oscillator to play that note
             index++
      */
+
+    playRightHand()
+    playLeftHand()
+}
+
+
+function playRightHand() {
     if (started) {
         /* for rh's set of notes. this comprises the right hand */
         if (millis() > rh[notePos].timestamp * 1000 + start) {
+
+            if (!(firstNotePlayedRH)) {
+                firstNotePlayedRH = true
+                osc.start()
+            }
+
             midiValue = rh[notePos].noteID;
             freq = midiToFreq(midiValue);
             osc.freq(freq);
@@ -138,7 +156,7 @@ function draw() {
 
             /* draw a dot with x-coordinate corresponding to its midi value */
             let x = map(midiValue, 30, 90, 0, width)
-            fill(216, 70, 70, 50)
+            fill(201, 96, 83, 100)
             circle(x, height/2, 30)
 
             DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${midiValue}→${rh[notePos].name}`
@@ -149,29 +167,40 @@ function draw() {
                 started = false
                 DEBUG_TEXT = `press T again to start the music!`
                 notePos = 0 /* reset our position */
+                firstNotePlayedRH = false
             }
         }
     }
+}
 
+
+function playLeftHand() {
     if (lhStarted) {
         /* left-hand notes */
         if (millis() > lh[lhNotePos].timestamp * 1000 + start) {
-            midiValue = lh[lhNotePos].noteID;
-            freq = midiToFreq(midiValue);
-            lhOsc.freq(freq);
+
+            if (!(firstNotePlayedLH)) {
+                firstNotePlayedLH = true
+                lhOsc.start()
+            }
+            lhMidiValue = lh[lhNotePos].noteID;
+            lhFreq = midiToFreq(lhMidiValue);
+            lhOsc.freq(lhFreq);
             lhEnv.ramp(lhOsc, 0, 1.0, 0);
 
-            let x = map(midiValue, 30, 90, 0, width)
-            fill(90, 70, 70, 50)
+            let x = map(lhMidiValue, 30, 90, 0, width)
+            fill(89, 100, 58, 100)
             circle(x, height/2, 30)
 
-            DEBUG_T2 = `${freq.toFixed(2)} Hz, ${midiValue}→${lh[notePos].name}`
+            console.log(lh[lhNotePos])
+            DEBUG_T2 = `${lhFreq.toFixed(2)} Hz, ${lhMidiValue}→${lh[lhNotePos].name}`
             lhNotePos++
 
             /* automatically reset if we reach the end of the song */
             if (lhNotePos >= lh.length) {
                 lhNotePos = 0 /* reset our position */
                 lhStarted = false
+                firstNotePlayedLH = false
             }
         }
     }
@@ -190,8 +219,6 @@ function keyPressed() {
         start = millis()
         started = true
         lhStarted = true
-        lhOsc.start()
-        osc.start()
     }
 }
 
