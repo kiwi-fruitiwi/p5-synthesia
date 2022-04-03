@@ -15,9 +15,18 @@
  *     https://colxi.info/midi-parser-js/test/test-es6-import.html
  *
  *
- *  ☐ probably one oscillator per track but main objective is visualization
+ *  🌟 if next 2-5 notes within tiny time window:
+ *    play with auxiliary oscillators (are additional envelopes needed?)
+ *    can we start one on the spot?
+ *  bite-sized iteration piece: detect next note only, spin up new oscillator
+ *  make midi of just 2-3 measures of chord progressions
+ *
+ *
+ *  ☐ add output duration to envelope
+ *  ☐ scan ahead for the next note? if very close in time, more oscillators
+ *  ☒ probably one oscillator per track but main objective is visualization
  *  ☐ migrate particle system
- *  ☐ huge refactor
+ *  ☒ huge refactor
  *  ☐ base music on total time instead of note index
  *  ☒ list of tracks → there are only two
  *  ☒ create list of notes from tracks
@@ -157,7 +166,7 @@ function playRightHand() {
             /* draw a dot with x-coordinate corresponding to its midi value */
             let x = map(midiValue, 30, 90, 0, width)
             fill(201, 96, 83, 100)
-            circle(x, height/2, 30)
+            circle(x, height/2, map(rh[notePos].duration, 0, 1, 20, 50))
 
             DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${midiValue}→${rh[notePos].name}`
             notePos++
@@ -183,6 +192,7 @@ function playLeftHand() {
                 firstNotePlayedLH = true
                 lhOsc.start()
             }
+
             lhMidiValue = lh[lhNotePos].noteID;
             lhFreq = midiToFreq(lhMidiValue);
             lhOsc.freq(lhFreq);
@@ -190,7 +200,7 @@ function playLeftHand() {
 
             let x = map(lhMidiValue, 30, 90, 0, width)
             fill(89, 100, 58, 100)
-            circle(x, height/2, 30)
+            circle(x, height/2, map(lh[lhNotePos].duration, 0, 1, 20, 50))
 
             console.log(lh[lhNotePos])
             DEBUG_T2 = `${lhFreq.toFixed(2)} Hz, ${lhMidiValue}→${lh[lhNotePos].name}`
