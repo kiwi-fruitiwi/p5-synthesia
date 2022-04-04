@@ -1,4 +1,6 @@
 /**
+ * Wrapper object around a tone.js midi translation JSON object
+ *
  * The tone.js midi→js translator ends up with output like this:
  * {
  *   "name": "G4",

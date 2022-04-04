@@ -21,7 +21,8 @@
  *  bite-sized iteration piece: detect next note only, spin up new oscillator
  *  make midi of just 2-3 measures of chord progressions
  *
- *
+ *  ☐ setType
+ *  ☐ amp ramp up
  *  ☐ add output duration to envelope
  *  ☐ scan ahead for the next note? if very close in time, more oscillators
  *  ☒ probably one oscillator per track but main objective is visualization
@@ -95,6 +96,8 @@ let notePos = 0 /* current note in the notes list */
 let lhNotePos = 0 /* current note in the left-hand notes list */
 
 
+let particles = [] /* holds note visualizations */
+
 function preload() {
     font = loadFont('data/consola.ttf')
     midiJSON = loadJSON('midi-json/tone.js/toccata.json')
@@ -118,9 +121,13 @@ function setup() {
 
     osc = new p5.TriOsc();
     env = new p5.Envelope();
+    // env.setADSR(.05, .1, .5, 1)
+    // env.setRange(.8, 0)
 
     lhOsc = new p5.TriOsc();
     lhEnv = new p5.Envelope();
+    // lhEnv.setADSR(.05, .1, .5, 1)
+    // lhEnv.setRange(.8, 0)
 
     rh = createNotes(midiJSON['tracks'][0]['notes'])
     lh = createNotes(midiJSON['tracks'][1]['notes'])
@@ -134,7 +141,7 @@ function draw() {
     background(234, 34, 24)
     displayDebugCorner()
     stroke(0, 0, 100)
-    strokeWeight(2)
+    strokeWeight(1)
 
     /* if we've started:
         check notes[0]
@@ -145,6 +152,14 @@ function draw() {
 
     playRightHand()
     playLeftHand()
+
+    for (const p of particles) {
+        if (!p.finished()) {
+            p.show()
+            p.update()
+            // p.edges()
+        }
+    }
 }
 
 
@@ -166,7 +181,9 @@ function playRightHand() {
             /* draw a dot with x-coordinate corresponding to its midi value */
             let x = map(midiValue, 30, 90, 0, width)
             fill(201, 96, 83, 100)
-            circle(x, height/2, map(rh[notePos].duration, 0, 1, 20, 50))
+
+            particles.push(new Particle(x, height/2))
+            // circle(x, height/2, map(rh[notePos].duration, 0, 1, 20, 50))
 
             DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${midiValue}→${rh[notePos].name}`
             notePos++
@@ -200,7 +217,9 @@ function playLeftHand() {
 
             let x = map(lhMidiValue, 30, 90, 0, width)
             fill(89, 100, 58, 100)
-            circle(x, height/2, map(lh[lhNotePos].duration, 0, 1, 20, 50))
+            particles.push(new Particle(x, height/2))
+
+            // circle(x, height/2, map(lh[lhNotePos].duration, 0, 1, 20, 50))
 
             console.log(lh[lhNotePos])
             DEBUG_T2 = `${lhFreq.toFixed(2)} Hz, ${lhMidiValue}→${lh[lhNotePos].name}`
