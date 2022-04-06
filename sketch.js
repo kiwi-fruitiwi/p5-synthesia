@@ -78,29 +78,19 @@ let midiJSON /* json file containing translated midi msgs from tone.js */
 let tracks = []
 let rh, lh /* list of note objects created from tracks 0 & 1 of JSON notes */
 let start /* starting time of sound playback. used as offset */
-let started = false
-let lhStarted = false
-
-let midiValue, freq
-let lhMidiValue, lhFreq
-let osc, env
-let lhOsc, lhEnv
-
-/* flags used to prevent oscillator from playing immediately */
-let firstNotePlayedRH = false
-let firstNotePlayedLH = false
 
 let DEBUG_TEXT = ``
 let DEBUG_T2 = 'hello! press T to start playback'
-let notePos = 0 /* current note in the notes list */
+let rhNotePos = 0 /* current note in the notes list */
 let lhNotePos = 0 /* current note in the left-hand notes list */
-
 
 let particles = [] /* holds note visualizations */
 
+
 function preload() {
     font = loadFont('data/consola.ttf')
-    midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
+    // midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
+    midiJSON = loadJSON('midi-json/tone.js/toccata.json')
 }
 
 
@@ -119,16 +109,6 @@ function setup() {
         z → freeze sketch</pre>`)
 
 
-    osc = new p5.TriOsc();
-    env = new p5.Envelope();
-    // env.setADSR(.05, .1, .5, 1)
-    // env.setRange(.8, 0)
-
-    lhOsc = new p5.TriOsc();
-    lhEnv = new p5.Envelope();
-    // lhEnv.setADSR(.05, .1, .5, 1)
-    // lhEnv.setRange(.8, 0)
-
     rh = createNotes(midiJSON['tracks'][0]['notes'])
     lh = createNotes(midiJSON['tracks'][1]['notes'])
 
@@ -143,13 +123,6 @@ function draw() {
     stroke(0, 0, 100)
     strokeWeight(1)
 
-    /* if we've started:
-        check notes[0]
-        if notes[i].time * 1000 > offset + millis():
-            use oscillator to play that note
-            index++
-     */
-
     playRightHand()
     playLeftHand()
 
@@ -157,7 +130,6 @@ function draw() {
         if (!p.finished()) {
             p.show()
             p.update()
-            // p.edges()
         }
     }
 }
@@ -180,7 +152,7 @@ function playNote(note, duration) { /* needs an actual note object */
     let envelope = new p5.Envelope()
     let freq = midiToFreq(note.noteID)
 
-    envelope.setADSR(0.05, duration/2, .5, duration/2)
+    envelope.setADSR(0.05, duration * 3/4, .5, duration * 1/4)
     envelope.setRange(note.velocity, 0)
     // envelope.setRange(1.2, 0) /* defaults to (1, 0) */
 
@@ -196,72 +168,44 @@ function playNote(note, duration) { /* needs an actual note object */
 
 
 function playRightHand() {
-    if (started) {
-        /* for rh's set of notes. this comprises the right hand */
-        let note = rh[notePos]
-        if (millis() > note.timestamp * 1000 + start) {
+    /* for rh's set of notes. this comprises the right hand */
+    let note = rh[rhNotePos]
+    if (millis() > note.timestamp * 1000 + start) {
+        playNote(note, note.duration)
 
-            // if (!(firstNotePlayedRH)) {
-            //     firstNotePlayedRH = true
-            //     osc.start()
-            // }
+        /* draw a dot with x-coordinate corresponding to its midi value */
+        let x = map(note.noteID, 21, 108, 0, width)
+        fill(201, 96, 83, 100)
+        particles.push(new SynthesiaNote(x, height/2))
+        DEBUG_TEXT = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
+        rhNotePos++
 
-            playNote(note, note.duration)
-
-            /* draw a dot with x-coordinate corresponding to its midi value */
-            let x = map(note.noteID, 30, 90, 0, width)
-            fill(201, 96, 83, 100)
-
-            particles.push(new Particle(x, height/2))
-            // circle(x, height/2, map(rh[notePos].duration, 0, 1, 20, 50))
-
-            // DEBUG_TEXT = `${freq.toFixed(2)} Hz,
-            // ${midiValue}→${rh[notePos].name}`
-            notePos++
-
-            /* automatically reset if we reach the end of the song */
-            if (notePos >= rh.length) {
-                started = false
-                DEBUG_TEXT = `press T again to start the music!`
-                notePos = 0 /* reset our position */
-                firstNotePlayedRH = false
-            }
+        /* automatically reset if we reach the end of the song */
+        if (rhNotePos >= rh.length) {
+            DEBUG_TEXT = `press T again to start the music!`
+            rhNotePos = 0 /* reset our position */
         }
     }
 }
 
 
 function playLeftHand() {
-    if (lhStarted) {
-        /* left-hand notes */
-        if (millis() > lh[lhNotePos].timestamp * 1000 + start) {
+    /* left-hand notes */
+    let note = lh[lhNotePos]
+    if (millis() > note.timestamp * 1000 + start) {
+        playNote(note, note.duration)
 
-            if (!(firstNotePlayedLH)) {
-                firstNotePlayedLH = true
-                lhOsc.start()
-            }
+        let x = map(note.noteID, 21, 108, 0, width)
+        fill(89, 100, 58, 100)
+        particles.push(new SynthesiaNote(x, height/2))
 
-            lhMidiValue = lh[lhNotePos].noteID;
-            lhFreq = midiToFreq(lhMidiValue);
-            lhOsc.freq(lhFreq);
-            lhEnv.ramp(lhOsc, 0, 1.0, 0);
+        console.log(lh[lhNotePos])
+        DEBUG_T2 = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
+        lhNotePos++
 
-            let x = map(lhMidiValue, 30, 90, 0, width)
-            fill(89, 100, 58, 100)
-            particles.push(new Particle(x, height/2))
-
-            // circle(x, height/2, map(lh[lhNotePos].duration, 0, 1, 20, 50))
-
-            console.log(lh[lhNotePos])
-            DEBUG_T2 = `${lhFreq.toFixed(2)} Hz, ${lhMidiValue}→${lh[lhNotePos].name}`
-            lhNotePos++
-
-            /* automatically reset if we reach the end of the song */
-            if (lhNotePos >= lh.length) {
-                lhNotePos = 0 /* reset our position */
-                lhStarted = false
-                firstNotePlayedLH = false
-            }
+        /* automatically reset if we reach the end of the song */
+        if (lhNotePos >= lh.length) {
+            lhNotePos = 0 /* reset our position */
         }
     }
 }
@@ -277,8 +221,8 @@ function keyPressed() {
 
     if (key === 't') {
         start = millis()
-        started = true
-        lhStarted = true
+        rhNotePos = 0
+        lhNotePos = 0
     }
 }
 
