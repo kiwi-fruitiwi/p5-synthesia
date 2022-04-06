@@ -26,7 +26,7 @@
  *  ☐ add output duration to envelope
  *  ☐ scan ahead for the next note? if very close in time, more oscillators
  *  ☒ probably one oscillator per track but main objective is visualization
- *  ☐ migrate particle system
+ *  ☒ migrate particle system
  *  ☒ huge refactor
  *  ☐ base music on total time instead of note index
  *  ☒ list of tracks → there are only two
@@ -100,7 +100,7 @@ let particles = [] /* holds note visualizations */
 
 function preload() {
     font = loadFont('data/consola.ttf')
-    midiJSON = loadJSON('midi-json/tone.js/toccata.json')
+    midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
 }
 
 
@@ -163,29 +163,60 @@ function draw() {
 }
 
 
+/**
+ *
+ * @param note
+ * @param duration
+ *
+ * in setADSR, attack and decay are both times while sustain is an amplitude
+ * from 0 to 1. release is a time to fade out to the second arg of setRange(a,r)
+ *
+ * if we ever have issues with too many envelopes and oscillators existing:
+ *  make list of oscillator wrapper objects that sense if they're done with
+ *  playing their current note. isAvailable().
+ *  → we can iterate through our list for the next available oscillator to play!
+ */
+function playNote(note, duration) { /* needs an actual note object */
+    let envelope = new p5.Envelope()
+    let freq = midiToFreq(note.noteID)
+
+    envelope.setADSR(0.05, duration/2, .5, duration/2)
+    envelope.setRange(note.velocity, 0)
+    // envelope.setRange(1.2, 0) /* defaults to (1, 0) */
+
+    /* old values → lhEnv.ramp(lhOsc, 0, 1.0, 0); */
+
+    let wave = new p5.Oscillator(freq, 'sine')
+    wave.start()
+    wave.amp(envelope)
+
+    DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${note.noteID}→${note.name}`
+    envelope.play()
+}
+
+
 function playRightHand() {
     if (started) {
         /* for rh's set of notes. this comprises the right hand */
-        if (millis() > rh[notePos].timestamp * 1000 + start) {
+        let note = rh[notePos]
+        if (millis() > note.timestamp * 1000 + start) {
 
-            if (!(firstNotePlayedRH)) {
-                firstNotePlayedRH = true
-                osc.start()
-            }
+            // if (!(firstNotePlayedRH)) {
+            //     firstNotePlayedRH = true
+            //     osc.start()
+            // }
 
-            midiValue = rh[notePos].noteID;
-            freq = midiToFreq(midiValue);
-            osc.freq(freq);
-            env.ramp(osc, 0, 1.0, 0);
+            playNote(note, note.duration)
 
             /* draw a dot with x-coordinate corresponding to its midi value */
-            let x = map(midiValue, 30, 90, 0, width)
+            let x = map(note.noteID, 30, 90, 0, width)
             fill(201, 96, 83, 100)
 
             particles.push(new Particle(x, height/2))
             // circle(x, height/2, map(rh[notePos].duration, 0, 1, 20, 50))
 
-            DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${midiValue}→${rh[notePos].name}`
+            // DEBUG_TEXT = `${freq.toFixed(2)} Hz,
+            // ${midiValue}→${rh[notePos].name}`
             notePos++
 
             /* automatically reset if we reach the end of the song */
@@ -250,6 +281,16 @@ function keyPressed() {
         lhStarted = true
     }
 }
+
+
+/*
+function mousePressed() {
+    let midiValue = int(map(mouseY, 0, height, 21, 108))
+    let n = new Note('variable', midiValue, 16, .6, .13)
+    playNote(n, map(mouseX, 0, width, 0, 1.0))
+}
+*/
+
 
 /* convert notes in tone.js midi translation into objects */
 function createNotes(notesList) {
