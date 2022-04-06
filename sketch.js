@@ -77,6 +77,7 @@ let instructions
 let midiJSON /* json file containing translated midi msgs from tone.js */
 let tracks = []
 let rh, lh /* list of note objects created from tracks 0 & 1 of JSON notes */
+let rhPlaying, lhPlaying
 let start /* starting time of sound playback. used as offset */
 
 let DEBUG_TEXT = ``
@@ -111,6 +112,9 @@ function setup() {
 
     rh = createNotes(midiJSON['tracks'][0]['notes'])
     lh = createNotes(midiJSON['tracks'][1]['notes'])
+
+    rhPlaying = false
+    lhPlaying = false
 
     /* track data → console.log(midiJSON['tracks']) */
     console.log(midiJSON['tracks'])
@@ -168,44 +172,49 @@ function playNote(note, duration) { /* needs an actual note object */
 
 
 function playRightHand() {
-    /* for rh's set of notes. this comprises the right hand */
-    let note = rh[rhNotePos]
-    if (millis() > note.timestamp * 1000 + start) {
-        playNote(note, note.duration)
+    if (rhPlaying) {
 
-        /* draw a dot with x-coordinate corresponding to its midi value */
-        let x = map(note.noteID, 21, 108, 0, width)
-        fill(201, 96, 83, 100)
-        particles.push(new SynthesiaNote(x, height/2))
-        DEBUG_TEXT = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
-        rhNotePos++
+        /* for rh's set of notes. this comprises the right hand */
+        let note = rh[rhNotePos]
+        if (millis() > note.timestamp * 1000 + start) {
+            playNote(note, note.duration)
 
-        /* automatically reset if we reach the end of the song */
-        if (rhNotePos >= rh.length) {
-            DEBUG_TEXT = `press T again to start the music!`
-            rhNotePos = 0 /* reset our position */
+            /* draw a dot with x-coordinate corresponding to its midi value */
+            let x = map(note.noteID, 21, 108, 0, width)
+            fill(201, 96, 83, 100)
+            particles.push(new SynthesiaNote(x, 0, note.duration, 190))
+            DEBUG_TEXT = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
+            rhNotePos++
+
+            /* automatically reset if we reach the end of the song */
+            if (rhNotePos >= rh.length) {
+                DEBUG_TEXT = `press T again to start the music!`
+                rhPlaying = false
+            }
         }
     }
 }
 
 
 function playLeftHand() {
-    /* left-hand notes */
-    let note = lh[lhNotePos]
-    if (millis() > note.timestamp * 1000 + start) {
-        playNote(note, note.duration)
+    if (lhPlaying) {
+        /* left-hand notes */
+        let note = lh[lhNotePos]
+        if (millis() > note.timestamp * 1000 + start) {
+            playNote(note, note.duration)
 
-        let x = map(note.noteID, 21, 108, 0, width)
-        fill(89, 100, 58, 100)
-        particles.push(new SynthesiaNote(x, height/2))
+            let x = map(note.noteID, 21, 108, 0, width)
+            fill(89, 100, 58, 100)
+            particles.push(new SynthesiaNote(x, 0, note.duration, 90))
 
-        console.log(lh[lhNotePos])
-        DEBUG_T2 = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
-        lhNotePos++
+            console.log(lh[lhNotePos])
+            DEBUG_T2 = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
+            lhNotePos++
 
-        /* automatically reset if we reach the end of the song */
-        if (lhNotePos >= lh.length) {
-            lhNotePos = 0 /* reset our position */
+            /* automatically reset if we reach the end of the song */
+            if (lhNotePos >= lh.length) {
+                lhPlaying = false
+            }
         }
     }
 }
@@ -221,6 +230,9 @@ function keyPressed() {
 
     if (key === 't') {
         start = millis()
+
+        lhPlaying = true
+        rhPlaying = true
         rhNotePos = 0
         lhNotePos = 0
     }

@@ -6,9 +6,9 @@ class Particle {
         this.r = random(2, 5)
         this.maxspeed = 5
         this.maxforce = 1
-        this.hue = random(360)
+        // this.hue = random(360)
 
-        this.lifetime = random(50, 100)
+        this.lifetime = 100
         this.img = loadImage('data/64.png')
     }
 
@@ -62,7 +62,7 @@ class Particle {
         this.pos.add(this.vel)
         this.vel.add(this.acc)
         this.vel.limit(this.maxspeed)
-        this.vel.mult(0.995) // friction
+        // this.vel.mult(0.995) // friction
         this.acc.mult(0)
 
         this.lifetime -= random(0.5, 0.5)
