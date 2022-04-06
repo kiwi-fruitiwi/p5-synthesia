@@ -12,6 +12,8 @@ class SynthesiaNote extends Particle{
     }
 
 
+    /* 0.13045973749999717 is the duration of toccata notes */
+
     update() {
         super.update()
 

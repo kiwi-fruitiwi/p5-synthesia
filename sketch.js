@@ -87,11 +87,11 @@ let lhNotePos = 0 /* current note in the left-hand notes list */
 
 let particles = [] /* holds note visualizations */
 
-
 function preload() {
     font = loadFont('data/consola.ttf')
-    // midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
-    midiJSON = loadJSON('midi-json/tone.js/toccata.json')
+    midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
+    // midiJSON = loadJSON('midi-json/tone.js/toccata.json')
+    // midiJSON = loadJSON('midi-json/tone.js/sinfonia.json')
 }
 
 
@@ -152,22 +152,21 @@ function draw() {
  *  playing their current note. isAvailable().
  *  → we can iterate through our list for the next available oscillator to play!
  */
-function playNote(note, duration) { /* needs an actual note object */
-    let envelope = new p5.Envelope()
-    let freq = midiToFreq(note.noteID)
+function playNote(note) { /* needs an actual note object */
+    const envelope = new p5.Envelope()
+    const freq = midiToFreq(note.noteID)
+    const ATTACK = 0.05
+    const DELAY = note.duration
+    const SUSTAIN_AMP = 0.25 /* value does not seem to matter */
+    const RELEASE = 0.1
 
-    envelope.setADSR(0.05, duration * 3/4, .5, duration * 1/4)
-    envelope.setRange(note.velocity, 0)
-    // envelope.setRange(1.2, 0) /* defaults to (1, 0) */
+    envelope.setADSR(ATTACK, DELAY, SUSTAIN_AMP, RELEASE)
 
-    /* old values → lhEnv.ramp(lhOsc, 0, 1.0, 0); */
-
-    let wave = new p5.Oscillator(freq, 'sine')
+    const wave = new p5.Oscillator(freq, 'sine')
     wave.start()
     wave.amp(envelope)
-
-    DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${note.noteID}→${note.name}`
     envelope.play()
+    DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${note.noteID}→${note.name}`
 }
 
 
@@ -176,13 +175,13 @@ function playRightHand() {
 
         /* for rh's set of notes. this comprises the right hand */
         let note = rh[rhNotePos]
-        if (millis() > note.timestamp * 1000 + start) {
-            playNote(note, note.duration)
+        if (millis() > note.timestamp + start + 200) {
+            playNote(note)
 
             /* draw a dot with x-coordinate corresponding to its midi value */
             let x = map(note.noteID, 21, 108, 0, width)
-            fill(201, 96, 83, 100)
-            particles.push(new SynthesiaNote(x, 0, note.duration, 190))
+            fill(201, 96, 83, 100) /* -26.092 */
+            particles.push(new SynthesiaNote(x, 150, note.duration, 190))
             DEBUG_TEXT = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
             rhNotePos++
 
@@ -200,12 +199,12 @@ function playLeftHand() {
     if (lhPlaying) {
         /* left-hand notes */
         let note = lh[lhNotePos]
-        if (millis() > note.timestamp * 1000 + start) {
-            playNote(note, note.duration)
+        if (millis() > note.timestamp + start + 200) {
+            playNote(note)
 
             let x = map(note.noteID, 21, 108, 0, width)
             fill(89, 100, 58, 100)
-            particles.push(new SynthesiaNote(x, 0, note.duration, 90))
+            particles.push(new SynthesiaNote(x, 150, note.duration, 90))
 
             console.log(lh[lhNotePos])
             DEBUG_T2 = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`

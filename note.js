@@ -14,7 +14,7 @@ class Note {
     constructor(name, noteID, timestamp, velocity, duration) {
         this.name = name
         this.noteID = noteID
-        this.timestamp = timestamp
+        this.timestamp = timestamp*1000 /* turn s into ms! */
         this.velocity = velocity
         this.duration = duration
     }
