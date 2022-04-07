@@ -81,17 +81,20 @@ let rhPlaying, lhPlaying
 let start /* starting time of sound playback. used as offset */
 
 let DEBUG_TEXT = ``
-let DEBUG_T2 = 'hello! press T to start playback'
+let DEBUG_T2 = `hello! press T to start playback`
+let DEBUG_T3 = ``
 let rhNotePos = 0 /* current note in the notes list */
 let lhNotePos = 0 /* current note in the left-hand notes list */
 
 let particles = [] /* holds note visualizations */
+let choir /* collection of oscillators available to play notes */
 
 function preload() {
     font = loadFont('data/consola.ttf')
     midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
     // midiJSON = loadJSON('midi-json/tone.js/toccata.json')
     // midiJSON = loadJSON('midi-json/tone.js/sinfonia.json')
+    // midiJSON = loadJSON('midi-json/tone.js/chords.json')
 }
 
 
@@ -118,6 +121,7 @@ function setup() {
 
     /* track data → console.log(midiJSON['tracks']) */
     console.log(midiJSON['tracks'])
+    choir = new Choir(32)
 }
 
 
@@ -129,6 +133,8 @@ function draw() {
 
     playRightHand()
     playLeftHand()
+
+    choir.update()
 
     for (const p of particles) {
         if (!p.finished()) {
@@ -152,7 +158,7 @@ function draw() {
  *  playing their current note. isAvailable().
  *  → we can iterate through our list for the next available oscillator to play!
  */
-function playNote(note) { /* needs an actual note object */
+function deprecated_playNote(note) { /* needs an actual note object */
     const envelope = new p5.Envelope()
     const freq = midiToFreq(note.noteID)
     const ATTACK = 0.05
@@ -166,9 +172,8 @@ function playNote(note) { /* needs an actual note object */
     wave.start()
     wave.amp(envelope)
     envelope.play()
-    DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${note.noteID}→${note.name}`
+    // DEBUG_TEXT = `${freq.toFixed(2)} Hz, ${note.noteID}→${note.name}`
 }
-
 
 function playRightHand() {
     if (rhPlaying) {
@@ -176,12 +181,12 @@ function playRightHand() {
         /* for rh's set of notes. this comprises the right hand */
         let note = rh[rhNotePos]
         if (millis() > note.timestamp + start + 200) {
-            playNote(note)
+            choir.queueNote(note)
 
             /* draw a dot with x-coordinate corresponding to its midi value */
             let x = map(note.noteID, 21, 108, 0, width)
             fill(201, 96, 83, 100) /* -26.092 */
-            particles.push(new SynthesiaNote(x, 150, note.duration, 190))
+            particles.push(new SynthesiaNote(x, 0, note.duration, 190))
             DEBUG_TEXT = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
             rhNotePos++
 
@@ -200,13 +205,13 @@ function playLeftHand() {
         /* left-hand notes */
         let note = lh[lhNotePos]
         if (millis() > note.timestamp + start + 200) {
-            playNote(note)
+            choir.queueNote(note)
 
             let x = map(note.noteID, 21, 108, 0, width)
             fill(89, 100, 58, 100)
-            particles.push(new SynthesiaNote(x, 150, note.duration, 90))
+            particles.push(new SynthesiaNote(x, 0, note.duration, 90))
 
-            console.log(lh[lhNotePos])
+            // console.log(lh[lhNotePos])
             DEBUG_T2 = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
             lhNotePos++
 
@@ -238,13 +243,11 @@ function keyPressed() {
 }
 
 
-/*
 function mousePressed() {
     let midiValue = int(map(mouseY, 0, height, 21, 108))
     let n = new Note('variable', midiValue, 16, .6, .13)
-    playNote(n, map(mouseX, 0, width, 0, 1.0))
+    // choir.playNote(n)
 }
-*/
 
 
 /* convert notes in tone.js midi translation into objects */
@@ -265,12 +268,6 @@ function createNotes(notesList) {
 }
 
 
-function logTrackKeys() {
-    for (let key in midiJSON['tracks'][0])
-        console.log(key)
-}
-
-
 /** 🧹 shows debugging info using text() 🧹 */
 function displayDebugCorner() {
     const LEFT_MARGIN = 10
@@ -281,8 +278,13 @@ function displayDebugCorner() {
     strokeWeight(0)
 
     text(`RH: ${DEBUG_TEXT}`,
-        LEFT_MARGIN, DEBUG_Y_OFFSET - LINE_HEIGHT)
+        LEFT_MARGIN, DEBUG_Y_OFFSET - 2*LINE_HEIGHT)
 
     text(`LH: ${DEBUG_T2}`,
+        LEFT_MARGIN, DEBUG_Y_OFFSET - LINE_HEIGHT)
+
+    text(`current voice: ${DEBUG_T3}`,
         LEFT_MARGIN, DEBUG_Y_OFFSET)
+
+    /* → find max width of all lines; display semi-transparent background */
 }

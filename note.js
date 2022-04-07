@@ -16,6 +16,6 @@ class Note {
         this.noteID = noteID
         this.timestamp = timestamp*1000 /* turn s into ms! */
         this.velocity = velocity
-        this.duration = duration
+        this.duration = duration*1000
     }
 }

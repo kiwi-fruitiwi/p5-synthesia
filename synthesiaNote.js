@@ -1,7 +1,7 @@
 class SynthesiaNote extends Particle{
     constructor(x, y, height, hue) {
         super(x, y)
-        this.heightScalingFactor = 200
+        this.heightScalingFactor = 0.2
         this.vel = new p5.Vector(0, 2)
 
         /* height is affected by the duration! */
