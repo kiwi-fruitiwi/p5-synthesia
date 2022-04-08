@@ -31,8 +31,7 @@ class Choir {
             if (v.isAvailable() && !voiceFound) {
                 v.play(note)
                 voiceFound = true
-                // console.log(`note ${note.name}→voice[${i}] of
-                // ${this.voices.length-1}`)
+                console.log(`note ${note.name}→voice[${i}] of ${this.voices.length-1}`)
 
                 DEBUG_T3 = `${i}`
             }
@@ -46,16 +45,16 @@ class Choir {
     /* asks all choir voices to update their availability */
     update() {
         /* look through noteQueue */
-        for (let tuple of this.noteQueue) {
-            let note = tuple[0]
-            let ms = tuple[1]
+        for (let triple of this.noteQueue) {
+            let note = triple[0]
+            let timestamp = triple[1]
 
-            if (tuple[2] === false) { /* hasn't been played yet */
-                if (millis() > ms + this.delay) {
+            if (triple[2] === false) { /* hasn't been played yet */
+                if (millis() > timestamp + this.delay) {
                     this.playNote(note)
 
-                    /* we can also try removing this tuple with splice */
-                    tuple[2] = true /* set to already played */
+                    /* we can also try removing this triple with splice */
+                    triple[2] = true /* set to already played */
                 }
             }
         }

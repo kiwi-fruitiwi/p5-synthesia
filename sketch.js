@@ -15,29 +15,30 @@
  *     https://colxi.info/midi-parser-js/test/test-es6-import.html
  *
  *
- *  🌟 if next 2-5 notes within tiny time window:
+ *
+ *  ☐ piano keyboard visualization subproject
+ *  ☐ base music on total time instead of note index? but timestamps ordered
+ *  ☐ how do find grand piano sound for midi
+ *      → short answer: you play real audio with the visualization :D
+ *  ☒ if next 2-5 notes within tiny time window:
  *    play with auxiliary oscillators (are additional envelopes needed?)
  *    can we start one on the spot?
- *  bite-sized iteration piece: detect next note only, spin up new oscillator
- *  make midi of just 2-3 measures of chord progressions
- *
- *  ☐ setType
- *  ☐ amp ramp up
- *  ☐ add output duration to envelope
- *  ☐ scan ahead for the next note? if very close in time, more oscillators
+ *      bite-sized iteration piece: detect next note only, spin up new oscillator
+ *      make midi of just 2-3 measures of chord progressions: chords.json
+ *  ☒ setType
+ *  ☒ amp ramp up
+ *  ☒ add output duration to envelope
+ *  ☒ scan ahead for the next note? if very close in time, more oscillators
  *  ☒ probably one oscillator per track but main objective is visualization
  *  ☒ migrate particle system
  *  ☒ huge refactor
- *  ☐ base music on total time instead of note index
  *  ☒ list of tracks → there are only two
  *  ☒ create list of notes from tracks
  *  ☒ play a few notes using millis and durations * scale
  *      → starting tone due to osc.start() too early
- *  ☐ the playing mechanism probably needs to be an object
+ *  ☒ the playing mechanism probably needs to be an object: choir + voices! :D
  *  ☒ play entire track
  *  ☒ add second track
- *  ☐ how do find grand piano sound for midi
- *      → short answer: you play real audio with the visualization :D
  *  ☒ add basic visualization drawing dots for midiValue → x coordinate
  *
  */
@@ -91,9 +92,9 @@ let choir /* collection of oscillators available to play notes */
 
 function preload() {
     font = loadFont('data/consola.ttf')
-    midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
+    // midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
     // midiJSON = loadJSON('midi-json/tone.js/toccata.json')
-    // midiJSON = loadJSON('midi-json/tone.js/sinfonia.json')
+    midiJSON = loadJSON('midi-json/tone.js/sinfonia.json')
     // midiJSON = loadJSON('midi-json/tone.js/chords.json')
 }
 
@@ -121,7 +122,7 @@ function setup() {
 
     /* track data → console.log(midiJSON['tracks']) */
     console.log(midiJSON['tracks'])
-    choir = new Choir(32)
+    choir = new Choir(16)
 }
 
 
@@ -232,6 +233,7 @@ function keyPressed() {
             sketch stopped</pre>`)
     }
 
+    /* start a song! */
     if (key === 't') {
         start = millis()
 
@@ -240,6 +242,33 @@ function keyPressed() {
         rhNotePos = 0
         lhNotePos = 0
     }
+
+    rh = createNotes(midiJSON['tracks'][0]['notes'])
+    lh = createNotes(midiJSON['tracks'][1]['notes'])
+
+    switch(key) {
+        case '1':
+            console.log(`load cody's toccata`)
+            midiJSON = loadJSON('midi-json/tone.js/toccata.json')
+            break
+        case '2':
+            console.log(`load cody's composition based on sinfonia no.2`)
+            midiJSON = loadJSON('midi-json/tone.js/sinfonia.json')
+            break
+        case '3':
+            console.log(`load prelude and fugue in c minor`)
+            midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
+            break
+        case '4':
+            console.log(`load chord test`)
+            midiJSON = loadJSON('midi-json/tone.js/chords.json')
+            break
+    }
+}
+
+
+function loadSongAndClearParticles(log, path) {
+
 }
 
 
