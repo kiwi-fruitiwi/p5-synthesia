@@ -105,11 +105,8 @@ function setup() {
     /* initialize instruction div */
     instructions = select('#ins')
 
-    choir = new Choir(16)
+    choir = new Choir(2)
     loadSong(`prelude & fugue in c minor`, `prelude`)
-
-    /* track data → console.log(midiJSON['tracks']) */
-    console.log(midiJSON['tracks'])
 }
 
 

@@ -10,7 +10,7 @@ class Choir {
         /* does FPS matter though? */
         this.delay = 2000
         this.noteQueue = []
-        console.log(`created choir with length ${this.voices.length}`)
+        console.log(`created choir with ${this.voices.length} voices`)
     }
 
 
@@ -36,7 +36,7 @@ class Choir {
             if (v.isAvailable() && !voiceFound) {
                 v.play(note)
                 voiceFound = true
-                console.log(`note ${note.name}→voice[${i}] of ${this.voices.length-1}`)
+                console.log(`🎶 ${note.name} → voice ${i} of ${this.voices.length-1}`)
 
                 if (hand === 'r') {
                     DEBUG_TEXT = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
@@ -50,8 +50,14 @@ class Choir {
             }
         }
 
-        if (!voiceFound)
-            console.log(`ERROR: no voices available trying to play ${note}`)
+        if (!voiceFound) {
+            console.log(`[ INFO ]→ no voices available trying to play ${note.name}`)
+
+            this.voices.push(new Voice())
+            this.playNote(note, hand)
+
+            console.log(`[ INFO ]→ generating new voice at index ${this.voices.length}`)
+        }
     }
 
 
