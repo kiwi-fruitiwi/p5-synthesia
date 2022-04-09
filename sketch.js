@@ -82,7 +82,7 @@ let rhPlaying, lhPlaying
 let start /* starting time of sound playback. used as offset */
 
 let DEBUG_TEXT = ``
-let DEBUG_T2 = `hello! press T to start playback`
+let DEBUG_T2 = ``
 let DEBUG_T3 = ``
 let rhNotePos = 0 /* current note in the notes list */
 let lhNotePos = 0 /* current note in the left-hand notes list */
@@ -92,10 +92,6 @@ let choir /* collection of oscillators available to play notes */
 
 function preload() {
     font = loadFont('data/consola.ttf')
-    // midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
-    // midiJSON = loadJSON('midi-json/tone.js/toccata.json')
-    midiJSON = loadJSON('midi-json/tone.js/sinfonia.json')
-    // midiJSON = loadJSON('midi-json/tone.js/chords.json')
 }
 
 
@@ -106,23 +102,14 @@ function setup() {
     colorMode(HSB, 360, 100, 100, 100)
     textFont(font, 12)
 
-
     /* initialize instruction div */
     instructions = select('#ins')
-    instructions.html(`<pre>
-        [1,2,3,4,5] → no function 🥝🐳
-        z → freeze sketch</pre>`)
 
-
-    rh = createNotes(midiJSON['tracks'][0]['notes'])
-    lh = createNotes(midiJSON['tracks'][1]['notes'])
-
-    rhPlaying = false
-    lhPlaying = false
+    choir = new Choir(16)
+    loadSong(`prelude & fugue in c minor`, `prelude`)
 
     /* track data → console.log(midiJSON['tracks']) */
     console.log(midiJSON['tracks'])
-    choir = new Choir(16)
 }
 
 
@@ -182,13 +169,12 @@ function playRightHand() {
         /* for rh's set of notes. this comprises the right hand */
         let note = rh[rhNotePos]
         if (millis() > note.timestamp + start + 200) {
-            choir.queueNote(note)
+            choir.queueNote(note, 'r')
 
             /* draw a dot with x-coordinate corresponding to its midi value */
             let x = map(note.noteID, 21, 108, 0, width)
             fill(201, 96, 83, 100) /* -26.092 */
             particles.push(new SynthesiaNote(x, 0, note.duration, 190))
-            DEBUG_TEXT = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
             rhNotePos++
 
             /* automatically reset if we reach the end of the song */
@@ -206,14 +192,15 @@ function playLeftHand() {
         /* left-hand notes */
         let note = lh[lhNotePos]
         if (millis() > note.timestamp + start + 200) {
-            choir.queueNote(note)
+            choir.queueNote(note, 'l')
 
             let x = map(note.noteID, 21, 108, 0, width)
             fill(89, 100, 58, 100)
             particles.push(new SynthesiaNote(x, 0, note.duration, 90))
 
             // console.log(lh[lhNotePos])
-            DEBUG_T2 = `${midiToFreq(note.noteID).toFixed(2)} Hz, ${note.noteID}→${note.name}`
+            // DEBUG_T2 = `${midiToFreq(note.noteID).toFixed(2)} Hz,
+            // ${note.noteID}→${note.name}`
             lhNotePos++
 
             /* automatically reset if we reach the end of the song */
@@ -235,40 +222,57 @@ function keyPressed() {
 
     /* start a song! */
     if (key === 't') {
-        start = millis()
-
-        lhPlaying = true
-        rhPlaying = true
-        rhNotePos = 0
-        lhNotePos = 0
+        startSong()
     }
-
-    rh = createNotes(midiJSON['tracks'][0]['notes'])
-    lh = createNotes(midiJSON['tracks'][1]['notes'])
 
     switch(key) {
         case '1':
-            console.log(`load cody's toccata`)
-            midiJSON = loadJSON('midi-json/tone.js/toccata.json')
+            loadSong('toccata', 'toccata')
             break
         case '2':
-            console.log(`load cody's composition based on sinfonia no.2`)
-            midiJSON = loadJSON('midi-json/tone.js/sinfonia.json')
+            loadSong('sinfonia no.2 variation', 'sinfonia')
             break
         case '3':
-            console.log(`load prelude and fugue in c minor`)
-            midiJSON = loadJSON('midi-json/tone.js/prelude2cminor.json')
+            loadSong('prelude & fugue in c minor', 'prelude')
             break
         case '4':
-            console.log(`load chord test`)
-            midiJSON = loadJSON('midi-json/tone.js/chords.json')
+            loadSong('chords test midi', 'chords')
             break
     }
 }
 
 
-function loadSongAndClearParticles(log, path) {
+/* loads lists of notes in each instrument. in this case, L/R piano hands */
+function populateInstruments() {
+    rh = createNotes(midiJSON['tracks'][0]['notes'])
+    lh = createNotes(midiJSON['tracks'][1]['notes'])
 
+    rhPlaying = false
+    lhPlaying = false
+}
+
+
+/* sets flags for starting a song */
+function startSong() {
+    start = millis()
+
+    lhPlaying = true
+    rhPlaying = true
+    rhNotePos = 0
+    lhNotePos = 0
+}
+
+
+function loadSong(songName, jsonTitle) {
+    /* createNotes should be in a callback passed into loadJSON! */
+    midiJSON = loadJSON(`midi-json/tone.js/${jsonTitle}.json`, populateInstruments)
+    instructions.html(`<pre>
+        → currently loaded: ${songName} 🥝🐳 press T to play!
+        [1] toccata
+        [2] sinfonia no.2 variation
+        [3] prelude & fugue in c minor
+        [4] chords test midi 
+        z → freeze sketch</pre>`)
 }
 
 
@@ -306,14 +310,16 @@ function displayDebugCorner() {
     fill(0, 0, 100, 100) /* white */
     strokeWeight(0)
 
-    text(`RH: ${DEBUG_TEXT}`,
-        LEFT_MARGIN, DEBUG_Y_OFFSET - 2*LINE_HEIGHT)
+    if (rhPlaying || lhPlaying) {
+        text(`right: ${DEBUG_TEXT}`,
+            LEFT_MARGIN, DEBUG_Y_OFFSET - 2*LINE_HEIGHT)
 
-    text(`LH: ${DEBUG_T2}`,
-        LEFT_MARGIN, DEBUG_Y_OFFSET - LINE_HEIGHT)
+        text(` left: ${DEBUG_T2}`,
+            LEFT_MARGIN, DEBUG_Y_OFFSET - LINE_HEIGHT)
 
-    text(`current voice: ${DEBUG_T3}`,
-        LEFT_MARGIN, DEBUG_Y_OFFSET)
+        text(`voice: ${DEBUG_T3}`,
+            LEFT_MARGIN, DEBUG_Y_OFFSET)
+    }
 
     /* → find max width of all lines; display semi-transparent background */
 }
