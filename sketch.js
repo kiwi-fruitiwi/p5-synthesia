@@ -235,6 +235,9 @@ function keyPressed() {
         case '4':
             loadSong('chords test midi', 'chords')
             break
+        case '5':
+            loadSong('dragonsong', 'dragonsong')
+            break
     }
 }
 
@@ -268,7 +271,8 @@ function loadSong(songName, jsonTitle) {
         [1] toccata
         [2] sinfonia no.2 variation
         [3] prelude & fugue in c minor
-        [4] chords test midi 
+        [4] chords test midi
+        [5] dragonsong
         z → freeze sketch</pre>`)
 }
 
